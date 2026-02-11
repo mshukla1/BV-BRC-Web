@@ -13,7 +13,9 @@ var users = require('./routes/users');
 var reportProblem = require('./routes/reportProblem');
 var notifySubmitSequence = require('./routes/notifySubmitSequence');
 var linkedin = require('./routes/linkedin');
+var google = require('./routes/google');
 var workspace = require('./routes/workspace');
+var outbreaks = require('./routes/outbreaks');
 var viewers = require('./routes/viewers');
 var remotePage = require('./routes/remotePage');
 var search = require('./routes/search');
@@ -34,12 +36,28 @@ app.use(favicon(path.join(__dirname, '/public/favicon.ico')));
 app.use(logger('dev'));
 app.use(cookieParser(config.get('cookieSecret')));
 
+const proxyConfig = config.get('proxyConfig');
+if (proxyConfig) {
+  const proxy = require("express-http-proxy");
+  var prox;
+
+  for (const prox of proxyConfig) {
+    console.log(prox);
+    app.use(prox.local, proxy(prox.site, {
+      proxyReqPathResolver: req => req.originalUrl.replace(prox.local, ""),
+      https: true
+    }));
+  }
+}
+
 app.use(function (req, res, next) {
   // console.log("Config.production: ", config.production);
   // console.log("Session Data: ", req.session);
   req.config = config;
   req.production = config.get('production') || false;
-  req.productionLayers = ['p3/layer/core'];
+  req.productionLayers = [
+    'p3/layer/core'
+]
   req.package = packageJSON;
   // var authToken = "";
   // var userProf = "";
@@ -50,6 +68,7 @@ app.use(function (req, res, next) {
     probModelSeedServiceURL: config.get('probModelSeedServiceURL'), // for dashboard
     shockServiceURL: config.get('shockServiceURL'), // for dashboard
     workspaceServiceURL: config.get('workspaceServiceURL'),
+    workspaceDownloadServiceURL: config.get('workspaceDownloadServiceURL'),
     appBaseURL: config.get('appBaseURL'),
     appServiceURL: config.get('appServiceURL'),
     dataServiceURL: config.get('dataServiceURL'),
@@ -64,6 +83,11 @@ app.use(function (req, res, next) {
     jiraLabel: config.get('jiraLabel'),
     appVersion: packageJSON.version,
     userServiceURL: config.get('userServiceURL'),
+    copilotApiURL: config.get('copilotApiURL') || false,
+    copilotDbURL: config.get('copilotDbURL') || false,
+    copilotEnablePublications: config.get('copilotEnablePublications') || false,
+    copilotEnableEnhancePrompt: config.get('copilotEnableEnhancePrompt') || false,
+    copilotEnableShowPromptDetails: config.get('copilotEnableShowPromptDetails') || false,
     localStorageCheckInterval: config.get('localStorageCheckInterval')
   };
   // console.log("Application Options: ", req.applicationOptions);
@@ -125,6 +149,7 @@ app.use('/', routes);
 app.post('/reportProblem', reportProblem);
 app.post('/notifySubmitSequence', notifySubmitSequence);
 app.use('/linkedin', linkedin);
+app.use('/google', google);
 app.use('/workspace', workspace);
 app.use('/content', contentViewer);
 app.use('/webpage', contentViewer);
@@ -135,6 +160,7 @@ app.use('/register', contentViewer);
 app.use('/verify_refresh', contentViewer);
 app.use('/verify_failure', contentViewer);
 app.use('/remote', remotePage);
+app.use('/outbreaks', outbreaks);
 app.use('/view', viewers);
 app.use('/search', search);
 app.use('/searches', search);

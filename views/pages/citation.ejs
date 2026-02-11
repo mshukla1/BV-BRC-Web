@@ -2,11 +2,11 @@
 <html lang="en">
 	<head>
         <title>Citation | BV-BRC</title>
-		<% include ../header %>
+		<%- include('../header') %>
 	</head>
 	<body class="claro patric <% if (request.isAuthenticated && request.isAuthenticated()) { %>Authenticated<% } %>">
 		<div id="ApplicationContainer" data-dojo-type="dijit/layout/BorderContainer" class="layoutContainer" data-dojo-props="id:'ApplicationContainer',gutters:false,liveSplitters:false">
-			<% include ../bv-brc-header %>
+			<%- include('../bv-brc-header') %>
             <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'" style="padding:0px;border:0px solid #ddd;background:inherit;">
                 <div id="bv-brc-page">
                     <div id="bv-brc-page-container">
@@ -57,7 +57,7 @@
                           <br>
 
                           <h3 id="citing-the-bv-brc-contract">Citing the BV-BRC contract:</h3>
-                          <p>In some circumstances, you may also wish to cite BV-BRC in the Acknowledgement section as follows: "The Bacterial and Viral Bioinformatics Resource Center (BV-BRC) has been funded in whole or in part with federal funds from the National Institute of Allergy and Infectious Diseases, National Institutes of Health, Department of Health and Human Services, under Contract No. 75N93019C00076 to the University of Chicago.</p>
+                          <p>In some circumstances, you may also wish to cite BV-BRC in the Acknowledgement section as follows: "The Bacterial and Viral Bioinformatics Resource Center (BV-BRC) has been funded in whole or in part with federal funds from the National Institute of Allergy and Infectious Diseases, National Institutes of Health, Department of Health and Human Services, under Grant No. U24AI183849 to the University of Chicago.</p>
                           <br>
 
                           <h3 id="contacting-us">Contacting us:</h3>
@@ -69,15 +69,10 @@
                         </div>
                     </div>
                 </div>
-                <% include ../bv-brc-footer %>
-                <style>
-                    body.patric {
-                        min-width: 830px;
-                    }
-                </style>
+                <%- include('../bv-brc-footer') %>
             </div>
         </div>
 
-		<% include ../javascript %>
+		<%- include('../javascript') %>
 	</body>
 </html>

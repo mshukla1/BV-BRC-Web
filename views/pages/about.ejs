@@ -2,11 +2,11 @@
 <html lang="en">
 	<head>
         <title>About Us | BV-BRC</title>
-		<% include ../header %>
+		<%- include('../header') %>
 	</head>
 	<body class="claro patric <% if (request.isAuthenticated && request.isAuthenticated()) { %>Authenticated<% } %>">
 		<div id="ApplicationContainer" data-dojo-type="dijit/layout/BorderContainer" class="layoutContainer" data-dojo-props="id:'ApplicationContainer',gutters:false,liveSplitters:false">
-			<% include ../bv-brc-header %>
+			<%- include('../bv-brc-header') %>
             <div data-dojo-type="dijit/layout/ContentPane" data-dojo-props="region:'center'" style="padding:0px;border:0px solid #ddd;background:inherit;">
                 <div id="bv-brc-page">
                     <div id="bv-brc-page-container">
@@ -52,7 +52,7 @@
                             </ul>
 
                             <h2>Funding</h2>
-                            <p>This project has been funded in whole or in part with Federal funds from the National Institute of Allergy and Infectious Diseases, National Institutes of Health, Department of Health and Human Services, under Contract <strong>No. 75N93019C00076</strong>.</p>
+                            <p>This project has been funded in whole or in part with Federal funds from the National Institute of Allergy and Infectious Diseases, National Institutes of Health, Department of Health and Human Services, under Grant <strong>No. U24AI183849</strong>.</p>
                             <br>
                             <!--
                             <h2>Performance and Usage Metrics</h2>
@@ -68,15 +68,10 @@
                         </div>
                     </div>
                 </div>
-                <% include ../bv-brc-footer %>
-                <style>
-                    body.patric {
-                        min-width: 830px;
-                    }
-                </style>
+                <%- include('../bv-brc-footer') %>
             </div>
         </div>
 
-		<% include ../javascript %>
+		<%- include('../javascript') %>
 	</body>
 </html>

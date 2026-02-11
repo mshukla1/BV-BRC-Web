@@ -149,7 +149,7 @@ define([
 
     var mini = options && options.mini || false;
 
-    var table = domConstruct.create('table', {}, parent);
+    var table = domConstruct.create('table', { 'style': 'table-layout: fixed;' }, parent);
     var tbody = domConstruct.create('tbody', {}, table);
 
     sections.forEach(function (section) {
@@ -204,9 +204,8 @@ define([
         // get text
         var pane = query(self.domNode).parents('.dijitTitlePane')[0];
         var content = query('pre', pane)[0].innerText;
-
         // copy contents
-        clipboard.copy(content);
+        navigator.clipboard.writeText(content);
 
         self.set('label', 'copied');
         setTimeout(function () {
@@ -1538,7 +1537,82 @@ define([
 
       return div;
     },
+    sequence_feature_data: function (item, options) {
+      options = options || {};
 
+      var metadataSFID = this.sf_meta_table_names();
+      var metadataSFValue = this.sf_meta_spec();
+
+      var div = domConstruct.create('div');
+      var label = item.sf_id;
+      displayHeader(div, label, 'fa icon-contigs fa-2x', '/view/SequenceFeature/' + item.sf_id, options);
+
+      displayDetailBySections(item, metadataSFID, metadataSFValue, div, options);
+
+      return div;
+    },
+    sf_meta_table_names: function () {
+      return ['Sequence Feature Definition', 'Source Strain Info'];
+    },
+    sf_meta_spec: function () {
+      var spec = {
+        'Sequence Feature Definition': [{
+          name: 'Gene',
+          text: 'gene'
+        },{
+          name: 'Protein Name',
+          text: 'product'
+        },{
+          name: 'SF Name',
+          text: 'sf_name'
+        }, {
+          name: 'SF Identifier',
+          text: 'sf_id'
+        }, {
+          name: 'Reference Accession',
+          text: 'genbank_accession'
+        }, {
+          name: 'Reference Positions',
+          text: 'segments'
+        }],
+
+        'Source Strain Info': [{
+          name: 'Source Strain',
+          text: 'source_strain'
+        }, {
+          name: 'Source Position',
+          text: 'source_sf_location'
+        }, {
+          name: 'Publication Type',
+          text: 'source'
+        },  {
+          name: 'Publication ID',
+          text: 'source_id',
+          link: function (obj) {
+            const baseURLs = {
+              'UniProt': 'https://www.uniprot.org/uniprotkb?query=',
+              'PMID': 'https://pubmed.ncbi.nlm.nih.gov/',
+              'IEDB': 'https://www.iedb.org/epitope/'
+            };
+
+            const baseURL = baseURLs[obj.source];
+
+            return baseURL ? `<a href="${baseURL}${obj.source_id}" target="_blank">${obj.source_id}</a>` : obj.source_id;
+          }
+        }, {
+          name: 'Evidence Code',
+          text: 'evidence_code'
+        },  {
+          name: 'Source Sequence',
+          text: 'source_aa_sequence'
+        }, {
+          name: 'Comments',
+          text: 'comments'
+        }]
+      };
+
+      return spec;
+    },
     surveillance_data: function (item, options) {
       options = options || {};
 
@@ -1820,6 +1894,9 @@ define([
         }],
 
         'Treatment': [{
+          name: 'Treatment Type',
+          text: 'treatment_type'
+        }, {
           name: 'Treatment',
           text: 'treatment'
         }, {
@@ -3354,7 +3431,7 @@ define([
           text: 'host_common_name',
           editable: true
         }, {
-          name: 'Host Gender',
+          name: 'Host Sex',
           text: 'host_gender',
           editable: true
         }, {

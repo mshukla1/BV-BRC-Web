@@ -2,7 +2,7 @@
   <div class="appTemplate">
     <div class="appTitle">
       <span class="breadcrumb">Services</span>
-      <h3>${applicationLabel}
+      <h1 class="appHeader">${applicationLabel}
         <div name="overview" class="infobox iconbox infobutton dialoginfo">
           <i class="fa icon-info-circle fa" title="click to open info dialog"></i>
         </div>
@@ -12,7 +12,7 @@
         <div class="infobox iconbox videoButton videoInfo">
           <a href="${videoLink}" target="_blank" ><i class="fa icon-play-circle fa-1x" title="click to open the video tutorial"></i></a>
         </div>
-      </h3>
+      </h1>
       <p>
         ${applicationDescription} For further explanation, please see the ${applicationLabel} Service <a href="${docsServiceURL}${applicationHelp}" target="_blank">Quick Reference Guide</a>, <a href="${docsServiceURL}${tutorialLink}" target="_blank">Tutorial</a> and <a href="${videoLink}" target="_blank">Instructional Video</a>.
       </p>
@@ -225,23 +225,7 @@
               <label class="paramlabel">Metadata Fields:</label>
               <div name="metadata_selector" class="medInput">
                 <select data-dojo-attach-point="metadata_selector"
-                  data-dojo-type="dijit/form/Select" name="metadata_selector" required="false">
-                  <option value="genome_id">Genome ID</option>
-                  <option value="genome_name">Genome Name</option>
-                  <option value="genome_length">Genome Length</option>
-                  <option value="feature_group">Feature Group</option>
-                  <option value="species">Species</option>
-                  <option value="strain">Strain</option>
-                  <option value="accession">Accession</option>
-                  <option value="subtype">Subtype</option>
-                  <option value="lineage">Lineage</option>
-                  <option value="host_group">Host Group</option>
-                  <option value="host_common_name">Host Common Name</option>
-                  <option value="collection_date">Collection Date</option>
-                  <option value="collection_year">Collection Year</option>
-                  <option value="geographic_group">Geographic Group</option>
-                  <option value="isolation_country">Isolation Country</option>
-                  <option value="geographic_location">Geographic Location</option>
+                  data-dojo-type="dijit/form/Select" name="metadata_selector" required="false" data-dojo-attach-event="onChange:checkMoreOptions">
                 </select>
               </div>
             </td>

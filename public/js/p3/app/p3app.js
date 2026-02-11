@@ -1,16 +1,18 @@
 define([
   'dojo/_base/declare',
-  'dojo/topic', 'dojo/on', 'dojo/dom', 'dojo/dom-class', 'dojo/dom-attr', 'dojo/dom-construct', 'dojo/query',
+  'dojo/topic', 'dojo/on', 'dojo/dom', 'dojo/dom-class', 'dojo/dom-attr', 'dojo/dom-construct', 'dojo/dom-style', 'dojo/query',
   'dijit/registry', 'dojo/_base/lang',
   'dojo/_base/Deferred',
   'dojo/store/JsonRest', 'dojox/widget/Toaster',
   'dojo/ready', './app', '../router',
   'dojo/window', '../widget/Drawer', 'dijit/layout/ContentPane',
   '../jsonrpc', '../panels', '../WorkspaceManager', '../DataAPI', 'dojo/keys',
-  'dijit/ConfirmDialog', '../util/PathJoin', 'dojo/request', '../widget/WorkspaceController'
+  'dijit/ConfirmDialog', '../util/PathJoin', 'dojo/request', '../widget/WorkspaceController',
+  'p3/widget/copilot/ChatButton'
+
 ], function (
   declare,
-  Topic, on, dom, domClass, domAttr, domConstruct, domQuery,
+  Topic, on, dom, domClass, domAttr, domConstruct, domStyle, domQuery,
   Registry, lang,
   Deferred,
   JsonRest, Toaster,
@@ -18,7 +20,7 @@ define([
   Router, Window,
   Drawer, ContentPane,
   RPC, Panels, WorkspaceManager, DataAPI, Keys,
-  ConfirmDialog, PathJoin, xhr, WorkspaceController
+  ConfirmDialog, PathJoin, xhr, WorkspaceController, ChatButton
 ) {
   return declare([App], {
     panels: Panels,
@@ -42,6 +44,59 @@ define([
           } else {
             domClass.add(document.body, 'unverified_email')
           }
+
+          // Initialize chat button
+          var chatButton = new ChatButton({
+            region: 'center',
+            width: '60px',
+            height: '60px',
+            backgroundColor: '#007bff',
+            borderRadius: '50%'
+          }).placeAt(document.body);
+          this.chatButton = chatButton;
+
+          // Create blue rectangle button for showing chat button when hidden
+          var showChatRectButton = domConstruct.create('div', {
+            className: 'ShowChatRectButton',
+            innerHTML: '<span class="show-chat-plus">+</span>',
+            title: 'show copilot button',
+            style: {
+              display: 'none'
+            }
+          });
+          domConstruct.place(showChatRectButton, document.body);
+
+          // Function to get chat button visibility from localStorage
+          function getChatButtonVisibility() {
+            try {
+              if (window && window.localStorage) {
+                var stored = localStorage.getItem('copilot-chat-button-visible');
+                return stored !== null ? (stored === 'true') : true; // default to visible
+              }
+            } catch (e) {
+              console.warn('Unable to read chat button visibility from localStorage', e);
+            }
+            return true; // default to visible
+          }
+
+          // Initialize showChatRectButton visibility based on localStorage
+          var initialChatButtonVisible = getChatButtonVisibility();
+          if (!initialChatButtonVisible) {
+            domStyle.set(showChatRectButton, 'display', 'block');
+          }
+
+          // Add click handler for the rectangle button
+          on(showChatRectButton, 'click', function(evt) {
+            Topic.publish('showChatButton', true);
+          });
+
+          Topic.subscribe('hideChatButton', lang.hitch(this, function(checked) {
+            domStyle.set(showChatRectButton, 'display', 'block');
+          }));
+
+          Topic.subscribe('showChatButton', lang.hitch(this, function(checked) {
+            domStyle.set(showChatRectButton, 'display', 'none');
+          }));
         })
       }
 
@@ -350,6 +405,18 @@ define([
         _self.navigate(newState);
       });
 
+      Router.register('/outbreaks(/.*)', function (params, path) {
+        var newState = getState(params, path);
+        var parts = newState.pathname.split('/');
+        parts.shift();
+        var type = parts.shift();
+
+        newState.widgetClass = 'p3/widget/outbreaks/' + type + '/index';
+        newState.requireAuth = false;
+
+        _self.navigate(newState);
+      });
+
       Router.register('/status', function (params, path) {
         var newState = populateState(params);
 
@@ -365,21 +432,20 @@ define([
       });
 
       Router.register('/searches(/.*)', function (params, path) {
-        var parts = path.split('/');
+        let newState = getState(params, path);
+        let parts = newState.pathname.split('/');
         parts.shift();
-        var type = parts.shift();
-        var viewerParams;
-        if (parts.length > 0) {
-          viewerParams = parts.join('/');
-        } else {
-          viewerParams = '';
-        }
+        const type = parts.shift();
 
-        var newState = populateState(params);
         newState.widgetClass = 'p3/widget/search/' + type;
-        newState.value = viewerParams;
-        newState.set = 'params';
         newState.requireAuth = false;
+
+        if (newState.search) {
+          newState.search.split('&').map(s => {
+            const [key, value] = s.split('=');
+            newState[key] = decodeURIComponent(value);
+          });
+        }
 
         _self.navigate(newState);
       });
@@ -548,6 +614,7 @@ define([
           }, false)
           // show the upload and jobs widget
           window.App.uploadJobsWidget('show');
+          window.App.chatButtonWidget('show');
           window.App.checkSU();
           window.App.alreadyLoggedIn = true;
         } else {
@@ -725,6 +792,21 @@ define([
         console.log('I should not see the upload and jobs widget');
       }
     },
+    chatButtonWidget: function (action) {
+      if (action === 'show') {
+        var chatButton = new ChatButton({
+          region: 'center',
+          width: '60px',
+          height: '60px',
+          backgroundColor: '#007bff',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+        });
+      } else {
+        console.log('I should not see the chat button');
+      }
+    },
     refreshUser: function () {
       return xhr.get(this.userServiceURL + '/user/' + window.localStorage.userid, {
         headers: {
@@ -818,13 +900,22 @@ define([
       });
     },
     updateUserWorkspaceList: function (data) {
-      var wsNode = dom.byId('YourWorkspaces');
-      domConstruct.empty('YourWorkspaces');
+      const wsNode = dom.byId('YourWorkspaces');
+      const wsMobileNode = dom.byId('YourWorkspaces-mobile');
 
-      data.forEach(function (ws) {
-        /* istanbul ignore if */
-        if (ws.name !== 'home') return;
-        var d = domConstruct.create('div', { style: { 'padding-left': '12px' } }, wsNode);
+      // Check if Workspace DOM nodes exist; skip if not.
+      if (!wsNode && !wsMobileNode) {
+        return;
+      }
+
+      if (wsNode) domConstruct.empty(wsNode);
+      if (wsMobileNode) domConstruct.empty(wsMobileNode);
+
+      const ws = data.find(d => d.name === 'home');
+      if (!ws) return;
+
+      if (wsNode) {
+        const d = domConstruct.create('div', { style: { 'padding-left': '12px' } }, wsNode);
         domConstruct.create('i', {
           'class': 'fa icon-caret-down fa-1x noHoverIcon',
           style: { 'margin-right': '4px' }
@@ -835,27 +926,26 @@ define([
           innerHTML: ws.name
         }, d);
         domConstruct.create('br', {}, d);
-        domConstruct.create('a', {
-          'class': 'navigationLink',
-          'style': { 'padding-left': '16px' },
-          href: '/workspace' + ws.path + '/Genome%20Groups',
-          innerHTML: 'Genome Groups'
-        }, d);
-        domConstruct.create('br', {}, d);
-        domConstruct.create('a', {
-          'class': 'navigationLink',
-          'style': { 'padding-left': '16px' },
-          href: '/workspace' + ws.path + '/Feature%20Groups',
-          innerHTML: 'Feature Groups'
-        }, d);
-        domConstruct.create('br', {}, d);
-        domConstruct.create('a', {
-          'class': 'navigationLink',
-          'style': { 'padding-left': '16px' },
-          href: '/workspace' + ws.path + '/Experiment%20Groups',
-          innerHTML: 'Experiment Groups'
-        }, d);
-      });
+        ['Genome Groups', 'Feature Groups', 'Experiment Groups'].forEach(group => {
+          domConstruct.create('a', {
+            'class': 'navigationLink',
+            style: { 'padding-left': '16px' },
+            href: `/workspace${ws.path}/${encodeURIComponent(group)}`,
+            innerHTML: group
+          }, d);
+          domConstruct.create('br', {}, d);
+        });
+      }
+
+      if (wsMobileNode) {
+        ['home', 'Genome Groups', 'Feature Groups', 'Experiment Groups'].forEach(group => {
+          domConstruct.create('a', {
+            style: { 'padding-left': '16px' },
+            href: `/workspace${ws.path}/${encodeURIComponent(group)}`,
+            innerHTML: group
+          }, wsMobileNode);
+        });
+      }
     }
   });
 });

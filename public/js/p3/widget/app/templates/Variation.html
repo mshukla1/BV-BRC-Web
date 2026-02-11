@@ -2,14 +2,14 @@
   <div class="appTemplate">
     <div class="appTitle">
       <span class="breadcrumb">Services</span>
-      <h3>${applicationLabel}
+      <h1 class="appHeader">${applicationLabel}
         <div name="overview" class="infobox iconbox infobutton dialoginfo">
           <i class="fa icon-info-circle fa" title="click to open info dialog"></i>
         </div>
         <div class="infobox iconbox tutorialButton tutorialInfo">
           <a href="${docsServiceURL}${tutorialLink}" target="_blank" ><i class="fa icon-books fa-1x" title="click to open tutorial"></i></a>
         </div>
-      </h3>
+      </h1>
       <p>${applicationDescription} For further explanation, please see the ${applicationLabel} Service <a href="${docsServiceURL}${applicationHelp}" target="_blank">Quick Reference Guide</a> and
         <a href="${docsServiceURL}${tutorialLink}" target="_blank">Tutorial</a>.
       </p>
@@ -96,6 +96,7 @@
                   <option value="Bowtie2">Bowtie2</option>
                   <option value="LAST">LAST</option>
                   <option value="minimap2">minimap2</option>
+                  <option value="Snippy">Snippy</option>
                 </select>
               </div>
               <div class="appRow">
@@ -103,6 +104,7 @@
                 <select data-dojo-type="dijit/form/Select" name="caller" data-dojo-attach-point="caller" style="width:300px" required="true" data-dojo-props="intermediateChanges:true,missingMessage:'SNP calling software to use',trim:true,placeHolder:'MySubFolder'">
                   <option value="FreeBayes">FreeBayes</option>
                   <option value="BCFtools">BCFtools</option>
+                  <option value="Snippy">Snippy</option>
                 </select>
               </div>
               <div class="appRow">

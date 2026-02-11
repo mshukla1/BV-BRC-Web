@@ -5,7 +5,8 @@ define([
   'dojo/topic', 'dojo/query', 'dijit/layout/ContentPane', 'dojo/text!./templates/IDMapping.html',
   'dijit/Dialog', 'dijit/popup', 'dijit/TooltipDialog', './DownloadTooltipDialog', './PerspectiveToolTip',
   './CopyTooltipDialog', './PermissionEditor', '../WorkspaceManager', '../DataAPI', 'dojo/_base/Deferred', '../util/PathJoin',
-  './FeatureDetailsTooltipDialog', './ServicesTooltipDialog', './RerunUtility', 'dojox/widget/Standby'
+  './FeatureDetailsTooltipDialog', './ServicesTooltipDialog', './RerunUtility', 'dojox/widget/Standby',
+  './copilot/ChatSessionContainerSidePanel', './copilot/CopilotApi', './copilot/ChatSessionOptionsBarSidePanel'
 ], function (
   declare, BorderContainer, on, domConstruct,
   request, when, domClass,
@@ -13,7 +14,8 @@ define([
   Topic, query, ContentPane, IDMappingTemplate,
   Dialog, popup, TooltipDialog, DownloadTooltipDialog, PerspectiveToolTipDialog,
   CopyTooltipDialog, PermissionEditor, WorkspaceManager, DataAPI, Deferred, PathJoin,
-  FeatureDetailsTooltipDialog, ServicesTooltipDialog, RerunUtility, Standby
+  FeatureDetailsTooltipDialog, ServicesTooltipDialog, RerunUtility, Standby,
+  ChatSessionContainerSidePanel, CopilotAPI, ChatSessionOptionsBar
 ) {
 
   var mmc = '<div class="wsActionTooltip" rel="dna">Nucleotide</div><div class="wsActionTooltip" rel="protein">Amino Acid</div>';
@@ -218,7 +220,20 @@ define([
           }
         }
 
+        // Show/hide columns if requested by user
+        if (state.hashParams.defaultColumns && this.grid) {
+          const columns = state.hashParams.defaultColumns.split(',');
+          for (let column of columns) {
+            column = column.trim();
+            if (!column) continue; // Skip empty columns
 
+            const isHidden = column.charAt(0) === '-';
+            const name = column.charAt(0) === '-' || column.charAt(0) === '+' ? column.substring(1) : column;
+            if (name in this.grid._columns) {
+              this.grid.toggleColumnHiddenState(name, isHidden);
+            }
+          }
+        }
       } else {
         state.hashParams = {};
         if (!oldState && this.defaultFilter) {
@@ -349,6 +364,100 @@ define([
           window.open(PathJoin(this.docsServiceURL, this.tutorialLink));
         },
         true
+      ],
+      [
+        'CopilotChat',
+        'fa icon-comment fa-2x',
+        {
+          label: 'Chat',
+          tooltip: 'Chat with Copilot',
+          persistent: true,
+          validTypes: ['*'],
+        },
+        function (selection, container, button) {
+          console.log('CopilotChat');
+          // Check if chat panel already exists
+          if (this.chatPanelWrapper) {
+            // If chat panel exists, toggle between chat and details panel
+            if (this.getChildren().indexOf(this.chatPanelWrapper) > -1) {
+              // Chat panel is currently shown, switch to details panel
+              this.removeChild(this.chatPanelWrapper);
+              if (this.itemDetailPanel) {
+                this.addChild(this.itemDetailPanel);
+              }
+            } else {
+              // Details panel is shown, switch to chat panel
+              if (this.itemDetailPanel) {
+                this.removeChild(this.itemDetailPanel);
+              }
+              this.addChild(this.chatPanelWrapper);
+            }
+            return;
+          }
+
+          // Create new CopilotAPI
+          this.copilotAPI = new CopilotAPI({
+            user_id: window.App.user.l_id
+          });
+
+          this.copilotAPI.getModelList().then(lang.hitch(this, function(modelsAndRag) {
+
+            var modelList = JSON.parse(modelsAndRag.models);
+            var ragList = JSON.parse(modelsAndRag.vdb_list);
+
+            // Add options bar to top of sidebar
+            var chatOptionsBar = new ChatSessionOptionsBar({
+              region: 'top',
+              copilotApi: this.copilotAPI,
+              modelList: modelList,
+              ragList: ragList
+            });
+
+            // Create new chat panel wrapped in a ContentPane to prevent layout conflicts
+            this.chatPanelWrapper = new ContentPane({
+              region: 'right',
+              splitter: true,
+              style: 'width: 32%; padding: 0; margin: 0; overflow: hidden;',
+              layoutPriority: 3
+            });
+
+            this.chatPanel = new ChatSessionContainerSidePanel({
+              style: 'width: 100%; height: 100%; border: 0; padding: 0; margin: 0;',
+              copilotApi: this.copilotAPI,
+              containerSelection: this.selectionActionBar.get('selection'),
+              optionsBar: chatOptionsBar,
+              context: 'grid-container'
+            });
+            this.chatPanel._setupContainerWatch();
+
+            // Add chat panel to wrapper
+            this.chatPanelWrapper.addChild(this.chatPanel);
+
+            // Remove itemDetailPanel if it exists and add wrapped chat panel in its place
+            if (this.itemDetailPanel && this.getChildren().indexOf(this.itemDetailPanel) > -1) {
+              this.removeChild(this.itemDetailPanel);
+            }
+
+            // Add wrapped chat panel
+            this.addChild(this.chatPanelWrapper);
+
+            // Wait for input widget to be created before setting initial selection
+            setTimeout(lang.hitch(this, function() {
+              if (this.chatPanel.inputWidget && this.selectionActionBar.get('selection').length > 0) {
+                this.chatPanel.set('containerSelection', this.selectionActionBar.get('selection'));
+                this.chatPanel.inputWidget.setSystemPromptWithData(this.selectionActionBar.get('selection'));
+              }
+            }), 300);
+          })).catch(lang.hitch(this, function(err) {
+            new Dialog({
+              title: "Service Unavailable",
+              content: "The BV-BRC Copilot service is currently disabled. Please try again later.",
+              style: "width: 300px"
+            }).show();
+            console.error('Error setting up chat panel:', err);
+          }));
+        },
+        true
       ], [
         'DownloadSelection',
         'fa icon-download fa-2x',
@@ -360,7 +469,7 @@ define([
           tooltip: 'Download Selection',
           max: 10000,
           tooltipDialog: downloadSelectionTT,
-          validContainerTypes: ['genome_data', 'sequence_data', 'feature_data', 'protein_data', 'spgene_data', 'spgene_ref_data', 'transcriptomics_experiment_data', 'transcriptomics_sample_data', 'experiment_data', 'bioset_data', 'pathway_data', 'transcriptomics_gene_data', 'gene_expression_data', 'interaction_data', 'genome_amr_data', 'structure_data', 'proteinFeatures_data', 'pathwayTab_data', 'subsystemTab_data', 'epitope_data', 'surveillance_data', 'serology_data']
+          validContainerTypes: ['sequence_feature_data', 'genome_data', 'sequence_data', 'feature_data', 'protein_data', 'spgene_data', 'spgene_ref_data', 'transcriptomics_experiment_data', 'transcriptomics_sample_data', 'experiment_data', 'bioset_data', 'pathway_data', 'transcriptomics_gene_data', 'gene_expression_data', 'interaction_data', 'genome_amr_data', 'structure_data', 'proteinFeatures_data', 'pathwayTab_data', 'subsystemTab_data', 'epitope_data', 'surveillance_data', 'serology_data']
         },
         function (selection, container) {
 
@@ -393,7 +502,7 @@ define([
           tooltip: 'Copy Selection to Clipboard.',
           tooltipDialog: copySelectionTT,
           max: 5000,
-          validContainerTypes: ['genome_data', 'sequence_data', 'feature_data', 'protein_data', 'spgene_data', 'spgene_ref_data', 'transcriptomics_experiment_data', 'transcriptomics_sample_data', 'pathway_data', 'transcriptomics_gene_data', 'gene_expression_data', 'interaction_data', 'genome_amr_data', 'pathway_summary_data', 'subsystem_data', 'structure_data', 'proteinFeatures_data', 'pathwayTab_data', 'subsystemTab_data', 'surveillance_data', 'serology_data', 'strain_data', 'epitope_data']
+          validContainerTypes: ['sequence_feature_data', 'genome_data', 'sequence_data', 'feature_data', 'protein_data', 'spgene_data', 'spgene_ref_data', 'transcriptomics_experiment_data', 'transcriptomics_sample_data', 'pathway_data', 'transcriptomics_gene_data', 'gene_expression_data', 'interaction_data', 'genome_amr_data', 'pathway_summary_data', 'subsystem_data', 'structure_data', 'proteinFeatures_data', 'pathwayTab_data', 'subsystemTab_data', 'surveillance_data', 'serology_data', 'strain_data', 'epitope_data']
         },
         function (selection, container) {
           this.selectionActionBar._actions.CopySelection.options.tooltipDialog.set('selection', selection);
@@ -575,6 +684,23 @@ define([
         },
         false
       ], [
+        'ViewSFVT',
+        'MultiButton fa icon-alignment fa-2x',
+        {
+          label: 'VARIANT TYPES',
+          validTypes: ['*'],
+          multiple: false,
+          validContainerTypes: ['sequence_feature_data'],
+          tooltip: 'View Sequence Feature Variant Types'
+        },
+        function (selection) {
+          var sel = selection[0];
+          Topic.publish('/navigate', {
+            href: '/view/SFVT/' + encodeURIComponent(sel.sf_id)
+          });
+        },
+        false
+      ], [
         'ViewGenomeItemFromGenome',
         'MultiButton fa icon-selection-Genome fa-2x',
         {
@@ -660,21 +786,16 @@ define([
           label: 'SURVEILLANCE',
           validTypes: ['*'],
           multiple: false,
-          tooltip: 'Switch to Surveillance View. Press and Hold for more options.',
+          tooltip: 'Switch to Surveillance View.',
           ignoreDataType: true,
-          validContainerTypes: ['surveillance_data'],
-          pressAndHold: function (selection, button, opts, evt) {
-            popup.open({
-              popup: new PerspectiveToolTipDialog({ perspectiveUrl: '/view/Surveillance/' + selection[0].sample_identifier }),
-              around: button,
-              orient: ['below'],
-            });
-
-          }
+          validContainerTypes: ['surveillance_data']
         },
         function (selection) {
           var sel = selection[0];
-          Topic.publish('/navigate', { href: '/view/Surveillance/' + sel.sample_identifier, target: 'blank' });
+          Topic.publish('/navigate', {
+            href: `/view/Surveillance/${sel.sample_identifier}?pathogen_test_type=${encodeURIComponent(sel.pathogen_test_type)}`,
+            target: 'blank'
+          });
         },
         false
       ],
@@ -721,8 +842,16 @@ define([
               return p.add(v.collection_latitude + ':' + v.collection_longitude);
             }, new Set());
 
-            // Warn user if selected unique locations are more than 750
-            if (locations.size > 750) {
+            if (locations.size === 0) { // Warn user if selected samples don't have any lat&long values
+              const d = new Dialog({
+                title: 'Warning',
+                content: 'Your selection does not contain any latitude and longitude values that will be displayed on the map.',
+                onHide: function () {
+                  d.destroy();
+                }
+              });
+              d.show();
+            } else if (locations.size > 750) { // Warn user if selected unique locations are more than 750
               const d = new Dialog({
                 title: 'Warning',
                 content: 'Surveillance Data Mapping allows a maximum of 750 locations to display. Your selection contains ' +
@@ -757,21 +886,16 @@ define([
           label: 'SEROLOGY',
           validTypes: ['*'],
           multiple: false,
-          tooltip: 'Switch to Serology View. Press and Hold for more options.',
+          tooltip: 'Switch to Serology View.',
           ignoreDataType: true,
-          validContainerTypes: ['serology_data'],
-          pressAndHold: function (selection, button, opts, evt) {
-            popup.open({
-              popup: new PerspectiveToolTipDialog({ perspectiveUrl: '/view/Serology/' + selection[0].sample_identifier }),
-              around: button,
-              orient: ['below'],
-            });
-
-          }
+          validContainerTypes: ['serology_data']
         },
         function (selection) {
           var sel = selection[0];
-          Topic.publish('/navigate', { href: '/view/Serology/' + sel.sample_identifier, target: 'blank' });
+          Topic.publish('/navigate', {
+            href: `/view/Serology/${sel.sample_identifier}?test_type=${encodeURIComponent(sel.test_type)}`,
+            target: 'blank'
+          });
         },
         false
       ],
@@ -1860,6 +1984,10 @@ define([
         }), this);
         this.selectionActionBar.set('selection', sel);
         this.itemDetailPanel.set('selection', sel);
+
+        if (this.chatPanelWrapper && this.chatPanel) {
+          this.chatPanel.set('containerSelection', sel);
+        }
       }));
 
       this.grid.on('deselect', lang.hitch(this, function (evt) {
@@ -1883,6 +2011,10 @@ define([
         }
         this.selectionActionBar.set('selection', sel);
         this.itemDetailPanel.set('selection', sel);
+
+        if (this.chatPanelWrapper && this.chatPanel) {
+          this.chatPanel.set('containerSelection', sel);
+        }
       }));
 
       on(this.domNode, 'ToggleFilters', lang.hitch(this, function (evt) {
@@ -1921,6 +2053,12 @@ define([
       this.selectionActions.forEach(function (a) {
         this.selectionActionBar.addAction(a[0], a[1], a[2], lang.hitch(this, a[3]), a[4], a[5]);
       }, this);
+
+      // Hide the panel on a small screen
+      if (window.innerWidth <= 768 && this.selectionActionBar) {
+        const hideBtn = query('[rel="ToggleItemDetail"]', this.selectionActionBar.domNode)[0];
+        hideBtn.click();
+      }
     },
 
     startup: function () {

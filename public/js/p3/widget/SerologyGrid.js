@@ -44,10 +44,12 @@ define([
 
       test_type: { label: 'Test Type', field: 'test_type', hidden: false },
       test_result: { label: 'Test Result', field: 'test_result', hidden: false },
-      test_interpretation: { label: 'Test Interpretation', field: 'test_interpretation', hidden: true },
+      test_interpretation: { label: 'Test Interpretation', field: 'test_interpretation', hidden: false },
       serotype: { label: 'Serotype', field: 'serotype', hidden: false },
 
       comments: { label: 'Comments', field: 'comments', hidden: true },
+      date_inserted: { label: 'Date Inserted', field: 'date_inserted', hidden: true },
+      date_updated: { label: 'Date Updated', field: 'date_updated', hidden: true },
     },
     startup: function () {
       var _self = this;

@@ -24,7 +24,7 @@ define([
 
       // Sample Info
       project_identifier: { label: 'Project Identifier', field: 'project_identifier', hidden: true },
-      contributing_institution: { label: 'Contributing Institution', field: 'contributing_institution', hidden: true },
+      contributing_institution: { label: 'Contributing Institution', field: 'contributing_institution', hidden: false },
       sample_identifier: { label: 'Sample Identifier', field: 'sample_identifier', hidden: false },
       sequence_accession: { label: 'Sequence Accession', field: 'sequence_accession', hidden: true },
       sample_material: { label: 'Sample Material', field: 'sample_material', hidden: false },
@@ -37,7 +37,7 @@ define([
 
       // Sample Collection
       collector_name: { label: 'Collector Name', field: 'collector_name', hidden: true },
-      collector_institution: { label: 'Collector Institution', field: 'collector_institution', hidden: false },
+      collector_institution: { label: 'Collector Institution', field: 'collector_institution', hidden: true },
       contact_email_address: { label: 'Contact Email Address', field: 'contact_email_address', hidden: true },
       collection_date: { label: 'Collection Date', field: 'collection_date', hidden: true },
       collection_year: { label: 'Collection Year', field: 'collection_year', hidden: false },
@@ -124,6 +124,7 @@ define([
       post_visit_medications: { label: 'Post Visit Medication', field: 'post_visit_medication', hidden: true },
 
       // Treatment
+      treatment_type: { label: 'Treatment Type', field: 'treatment_type', hidden: true },
       treatment: { label: 'Treatment', field: 'treatment', hidden: true },
       initiation_of_treatment: { label: 'Initiation of Treatment', field: 'initiation_of_treatment', hidden: true },
       duration_of_treatment: { label: 'Duration of Treatment', field: 'duration_of_treatment', hidden: true },
@@ -141,6 +142,8 @@ define([
       // Other
       additional_metadata: { label: 'Additional Metadata', field: 'additional_metadata', hidden: true },
       comments: { label: 'Comments', field: 'comments', hidden: true },
+      date_inserted: { label: 'Date Inserted', field: 'date_inserted', hidden: true },
+      date_updated: { label: 'Date Updated', field: 'date_updated', hidden: true },
 
     },
     startup: function () {

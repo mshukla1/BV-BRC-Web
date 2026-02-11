@@ -18,6 +18,7 @@ define([], function () {
         'ComprehensiveGenomeAnalysis': 'ComprehensiveGenomeAnalysis',
         'ComprehensiveSARS2Analysis': 'ComprehensiveSARS2Analysis',
         'DifferentialExpression': 'Expression',
+        'Docking': 'Docking',
         'FastqUtils': 'FastqUtil',
         'GeneTree': {
           'viral_genome': 'ViralGenomeTree',
@@ -41,7 +42,9 @@ define([], function () {
         'HASubtypeNumberingConversion': 'HASubtypeNumberingConversion',
         'TaxonomicClassification': 'TaxonomicClassification',
         'TnSeq': 'Tnseq',
-        'Variation': 'Variation'
+        'TreeSort': 'TreeSort',
+        'Variation': 'Variation',
+        'ViralAssembly': 'ViralAssembly'
       };
 
       // TODO: addin modal parameter

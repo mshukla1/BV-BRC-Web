@@ -14,7 +14,7 @@ define([
     dataModel: 'genome_amr',
     query: '',
     view: 'table',
-    baseQuery: '&limit(1)&facet((pivot,(resistant_phenotype,evidence,antibiotic)),(mincount,1))&json(nl,map)',
+    baseQuery: '&limit(1)&facet((pivot,(resistant_phenotype,evidence,antibiotic)),(mincount,1),(method,enum))&json(nl,map)',
     columns: [
       {
         label: 'Phenotypes',
@@ -52,16 +52,23 @@ define([
       var byPhenotypes = [];
 
       data.forEach(function (phenotype) {
+        if (!phenotype.value) {
+          return;
+        }
         phenotype.pivot.forEach(function (method) {
           var antibiotics = method.pivot.map(function (pv) {
             return pv.value;
           });
-          var isComputed = (method.value == 'Computational Method');
-          byPhenotypes.push({
-            resistant_phenotype: phenotype.value,
-            antibiotics: antibiotics,
-            is_computed: isComputed
-          });
+
+          // Check for method values
+          if (method.value.toLowerCase() === 'computational method' || method.value.toLowerCase() === 'laboratory method') {
+            var isComputed = (method.value.toLowerCase() === 'computational method');
+            byPhenotypes.push({
+              resistant_phenotype: phenotype.value,
+              antibiotics: antibiotics,
+              is_computed: isComputed
+            });
+          }
         });
       });
 

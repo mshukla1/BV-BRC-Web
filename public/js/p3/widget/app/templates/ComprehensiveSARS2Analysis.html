@@ -2,14 +2,14 @@
   <div class="appTemplate">
     <div class="appTitle">
       <span class="breadcrumb">Services</span>
-      <h3>${applicationLabel}
+      <h1 class="appHeader">${applicationLabel}
         <div name="overview" class="infobox iconbox infobutton dialoginfo">
           <i class="fa icon-info-circle fa" title="click to open info dialog"></i>
         </div>
         <div class="infobox iconbox tutorialButton tutorialInfo">
           <a href="${docsServiceURL}${tutorialLink}" target="_blank" ><i class="fa icon-books fa-1x" title="click to open tutorial"></i></a>
       </div>
-      </h3>
+      </h1>
       <p>${applicationDescription} For further explanation, please see the ${applicationLabel} Service <a href="${docsServiceURL}${applicationHelp}" target="_blank">Quick Reference Guide</a> and
         <a href="${docsServiceURL}${tutorialLink}" target="_blank">Tutorial</a>.
       </p>
@@ -179,7 +179,7 @@
           <!-- primer_versions -->
           <div class="appRowSegment" style="text-align:left; width:40%">
             <label class="paramlabel">Version</label><br>
-            <select id="primerVersionSelector" data-dojo-type="dijit/form/Select" name="primer_version" data-dojo-attach-point="primer_version" style="width:50px">
+            <select data-dojo-type="dijit/form/Select" name="primer_version" data-dojo-attach-point="primer_version" style="width:50px">
               <option value="V5.3.2">V5.3.2</option>
               <option value="V4.1">V4.1</option>
               <option value="V4">V4</option>
